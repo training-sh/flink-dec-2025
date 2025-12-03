@@ -14,7 +14,7 @@ cd lab
 cd flink-cluster-1
 ```
 
-ONLY IF YOU WANT TO BUILD IMAGED, NOT NEEDED FOR DAY 2, DAY 3
+ONLY IF YOU WANT TO BUILD IMAGE, NOT NEEDED FOR DAY 2, DAY 3
 
 ```
 docker compose build --no-cache

@@ -31,6 +31,10 @@ kafka-console-producer --bootstrap-server broker:9092 --topic test
 
 open new tab
 
+```
+docker exec -it kafka-tools bash
+```
+
 
 ```
 kafka-console-consumer --bootstrap-server broker:9092 --topic test --from-beginning

@@ -18,7 +18,7 @@ kafka-topics \
   --describe \
   --topic demo-topic \
   --bootstrap-server   broker:9092 
-``
+```
 
 ```
 kafka-topics --bootstrap-server broker:9092 --create --topic sentence --partitions 1 --replication-factor 1

@@ -16,7 +16,7 @@ kafka-topics \
 ```
 kafka-topics \
   --describe \
-  --topic demo-topic \
+  --topic test \
   --bootstrap-server   broker:9092 
 ```
 

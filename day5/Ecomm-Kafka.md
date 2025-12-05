@@ -61,6 +61,15 @@ kafka-topics --bootstrap-server broker:9092 \
   --config segment.ms=600000
 ```
 
+
+# Validate all 6 topics
+
+```
+kafka-topics \
+  --list \
+  --bootstrap-server broker:9092
+```
+
 Another Tab
  
 

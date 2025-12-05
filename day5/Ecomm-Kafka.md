@@ -32,6 +32,7 @@ kafka-topics --bootstrap-server broker:9092 \
   --create --topic fact_orders \
   --partitions 3 --replication-factor 1
 ```
+
 ```
 kafka-topics --bootstrap-server broker:9092 \
   --create --topic fact_order_items \
@@ -61,9 +62,7 @@ kafka-topics --bootstrap-server broker:9092 \
 ```
 
 Another Tab
-
-```
-
+ 
 
 ```
 docker exec -it kafka-tools bash

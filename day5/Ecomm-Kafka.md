@@ -148,7 +148,7 @@ Another tab
 ```
 kafka-console-consumer \
   --bootstrap-server broker:9092 \
-  --topic customer_revenue_upsert \
+  --topic customer_revenue \
   --from-beginning \
   --property print.key=true \
   --property key.separator=" | "

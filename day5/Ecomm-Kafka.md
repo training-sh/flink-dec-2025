@@ -96,7 +96,6 @@ kafka-console-producer \
 --topic dim_products \
 --property "parse.key=true" \
 --property "key.separator=|"
-
 ```
 
 ```

@@ -170,3 +170,73 @@ kafka-console-consumer \
 ```
 docker logs -f flink-taskmanager
 ```
+
+# Do not run below until trainer explain all outputs
+
+# Shiv , new customer
+
+```
+kafka-console-producer \
+  --bootstrap-server broker:9092 \
+  --topic dim_customers \
+  --property "parse.key=true" \
+  --property "key.separator=|"
+```
+
+```
+2|{"customer_id":2,"full_name":"Shiv","email":"shiv@example.com","signup_date":"2025-02-20","country":"India","city":"Bangalore","segment":"Standard"}
+```
+
+---
+
+
+```
+kafka-console-producer \
+  --bootstrap-server broker:9092 \
+  --topic fact_orders \
+  --property "parse.key=true" \
+  --property "key.separator=|"
+```
+
+-- listen, order 103 belongs to vel, now iceberg data must be updated, assume data came late
+
+
+```
+103|{"order_id":103,"customer_id":1,"order_datetime":"2025-11-01T18:45:00","order_status":"PAID","payment_method":"CARD","shipping_fee":6.99,"discount_amt":0.00}
+```
+-- listen, order 103 belongs to shiv  orver, now iceberg data must be updated
+
+```
+104|{"order_id":104,"customer_id":2,"order_datetime":"2025-10-20T11:22:00","order_status":"PAID","payment_method":"UPI","shipping_fee":4.50,"discount_amt":5.00}
+```
+
+----
+
+
+```
+kafka-console-producer \
+  --bootstrap-server broker:9092 \
+  --topic fact_order_items \
+  --property "parse.key=true" \
+  --property "key.separator=|"
+```
+
+```
+1005|{"order_item_id":1005,"order_id":103,"product_id":10,"quantity":1,"item_price":249.99}
+```
+
+```
+1006|{"order_item_id":1006,"order_id":104,"product_id":10,"quantity":1,"item_price":249.99}
+```
+
+```
+1007|{"order_item_id":1007,"order_id":104,"product_id":20,"quantity":1,"item_price":129.50}
+```
+
+--- after about 2 minutes, even thought check point is about 10 sec ---
+
+```
+1008|{"order_item_id":1008,"order_id":104,"product_id":20,"quantity":1,"item_price":100.00}
+```
+
+

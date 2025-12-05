@@ -37,11 +37,19 @@ kafka-topics --bootstrap-server broker:9092 \
   --create --topic fact_order_items \
   --partitions 3 --replication-factor 1
 ```
+
+
+# 3) Result
+
+debzium like format
+
 ```
 kafka-topics --bootstrap-server broker:9092 \
   --create --topic customer_revenue \
   --partitions 3 --replication-factor 1
 ```
+
+kafka-upsert
 
 ```
 kafka-topics --bootstrap-server broker:9092 \
@@ -51,3 +59,4 @@ kafka-topics --bootstrap-server broker:9092 \
   --config min.cleanable.dirty.ratio=0.1 \
   --config segment.ms=600000
 ```
+

@@ -163,3 +163,10 @@ kafka-console-consumer \
   --property print.key=true \
   --property key.separator=" | "
 ```
+
+
+# To see print on task manager
+
+```
+docker logs -f flink-taskmanager
+```

@@ -1,3 +1,3 @@
 
-https://confluent.cloud/login/sso/flink-demo
+ # DAY 6
 

@@ -118,6 +118,17 @@ FROM gks_v_customer_revenue_kafka AS c
 SELECT * FROM gks_customer_revenue_kafka_out LIMIT 2;
 ```
 
+Enter into confluent shell
+
+```
+docker exec -it kafka-tools bash
+```
+
+```
+ls /secrets
+```
+
+ensure ccloud.properties found
 
 ```
 kafka-console-producer \

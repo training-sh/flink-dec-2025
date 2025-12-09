@@ -30,7 +30,7 @@ INSERT INTO gks_orders_hopping_ex VALUES
   ('o8', 'u8', 'p107', 110.0, TIMESTAMP '2025-11-05 10:18:30.000');  -- 16-20 min (extra)
 ```
 
-```
+```sql
 CREATE VIEW gks_orders_hopping_ex_hop_10m_5m AS
 SELECT
   T.window_start,
@@ -59,11 +59,11 @@ GROUP BY
   T.window_end;
 ```
 
-```
+```sql
 SELECT * FROM gks_orders_hopping_ex_hop_10m_5m;
 ```
 
-```
+```sql
 -- heart beat or trigger for last window, you may notice 10-10 to 10-20 records not yet published
 -- just a second after past 20 would trigger window close for 10:10 to 10:20 window.
 INSERT INTO gks_orders_hopping_ex VALUES

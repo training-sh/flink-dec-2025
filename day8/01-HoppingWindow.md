@@ -1,4 +1,4 @@
-# Hopping Window/Slidng Window/Overlapping Window
+# Hopping Window/Sliding Window/Overlapping Window
 
 -- easy to understand example for hopping window.
 

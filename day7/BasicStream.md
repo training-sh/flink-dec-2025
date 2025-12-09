@@ -121,7 +121,7 @@ SELECT * FROM gks_customer_revenue_kafka_out LIMIT 2;
 
 ```
 kafka-console-producer \
-  --bootstrap-server pkc-75m1o.europe-west3.gcp.confluent.cloud:9092 \
+  --bootstrap-server <<replace>>.europe-west3.gcp.confluent.cloud:9092 \
   --topic gks_dim_customers_kafka \
   --property "parse.key=true" \
   --property "key.separator=|" \
@@ -138,7 +138,7 @@ kafka-console-producer \
 
 ```
 kafka-console-producer \
-  --bootstrap-server pkc-75m1o.europe-west3.gcp.confluent.cloud:9092 \
+  --bootstrap-server <<replace>>.europe-west3.gcp.confluent.cloud:9092 \
   --topic gks_dim_products_kafka \
   --property "parse.key=true" \
   --property "key.separator=|" \
@@ -155,7 +155,7 @@ kafka-console-producer \
 
 ```
 kafka-console-producer \
-  --bootstrap-server pkc-75m1o.europe-west3.gcp.confluent.cloud:9092 \
+  --bootstrap-server <<replace>>.europe-west3.gcp.confluent.cloud:9092 \
   --topic gks_fact_orders_kafka \
   --property "parse.key=true" \
   --property "key.separator=|" \
@@ -177,7 +177,7 @@ kafka-console-producer \
 
 ```
 kafka-console-producer \
-  --bootstrap-server pkc-75m1o.europe-west3.gcp.confluent.cloud:9092 \
+  --bootstrap-server <<replace>>.europe-west3.gcp.confluent.cloud:9092 \
   --topic gks_fact_order_items_kafka \
   --property "parse.key=true" \
   --property "key.separator=|" \

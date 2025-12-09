@@ -125,7 +125,7 @@ docker exec -it kafka-tools bash
 ```
 
 ```
-ls /secrets
+ls /secret
 ```
 
 ensure ccloud.properties found

@@ -1,0 +1,249 @@
+version: "3.8"
+
+services:
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:${CP_TAG:-6.2.0}
+    container_name: cp-zookeeper
+    hostname: zookeeper
+    restart: unless-stopped
+    networks: [flink-net]
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zk-data:/var/lib/zookeeper/data
+      - zk-txn-logs:/var/lib/zookeeper/log
+
+  broker:
+    image: confluentinc/cp-kafka:${CP_TAG:-6.2.0}
+    container_name: cp-kafka
+    hostname: broker
+    restart: unless-stopped
+    depends_on: [zookeeper]
+    networks: [flink-net]
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      # Single plaintext listener; advertised for in-network clients (Flink, Jupyter, etc.)
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092
+      # Single-replica safety knobs for a 1-node cluster:
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+      - ./secret:/secret:ro
+
+  # (Optional) CLI helper container: exec into it to run kafka-* tools
+  kafka-tools:
+    image: confluentinc/cp-kafka:${CP_TAG:-6.2.0}
+    container_name: kafka-tools
+    networks: [flink-net]
+    depends_on: [broker]
+    entrypoint: ["bash","-lc","sleep infinity"]
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+      - ./secret:/secret:ro
+
+  jobmanager:
+    build:
+      context: .              # C:\flink
+      dockerfile: Dockerfile  # defaults to "Dockerfile"; include for clarity
+    image: flink-py:1.20-java11
+    container_name: flink-jobmanager
+    hostname: jobmanager
+    command: jobmanager
+    restart: unless-stopped
+    ports:
+      - "8081:8081"                  # Flink Web UI / REST
+    networks: [flink-net]
+    environment:
+      # Set Flink properties (removed python.executable)
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        parallelism.default: 1
+        python.executable: /usr/bin/python3 
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio12345
+      - AWS_REGION=us-east-1   
+      - GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp/key.json
+      - HADOOP_CONF_DIR=/opt/flink/conf
+      - HADOOP_USER_NAME=minio
+    volumes:
+      - ./conf:/opt/flink/conf       # mount full conf dir (includes log4j*, etc.)
+      - ./logs/jm:/opt/flink/log
+      - ./notebooks:/notebooks
+      - ./conf/log4j-console.properties:/opt/flink/conf/log4j-console.properties:ro
+      - ./secret/key.json:/etc/gcp/key.json:ro
+        
+  taskmanager:
+    image: flink-py:1.20-java11
+    container_name: flink-taskmanager
+    command: taskmanager
+    hostname: taskmanager
+    restart: unless-stopped
+    depends_on: [jobmanager]
+    networks: [flink-net]
+    volumes:
+      - ./conf:/opt/flink/conf
+      - ./logs/tm:/opt/flink/log
+      - ./conf/log4j-console.properties:/opt/flink/conf/log4j-console.properties:ro
+      - ./notebooks:/notebooks
+      - ./secret/key.json:/etc/gcp/key.json:ro
+
+    environment:
+      # Set Flink properties (removed python.executable)
+      # taskmanager.numberOfTaskSlots: 1
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        python.executable: /usr/bin/python3 
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio12345
+      - AWS_REGION=us-east-1   
+      - GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp/key.json
+      - HADOOP_CONF_DIR=/opt/flink/conf
+      - HADOOP_USER_NAME=minio
+  jupyter:
+    image: flink-py:1.20-java11
+    container_name: flink-jupyter
+    restart: unless-stopped
+    hostname: jupyter
+    working_dir: /notebooks
+    command: >
+      bash -lc "jupyter lab
+      --ip=0.0.0.0 --port=8888 --no-browser
+      --NotebookApp.token='' --NotebookApp.password=''
+      --NotebookApp.notebook_dir=./notebooks"
+    ports:
+      - "8888:8888"
+    environment:
+      - FLINK_HOME=/opt/flink
+      - FLINK_CONF_DIR=/opt/flink/conf
+      - PYFLINK_CLIENT_EXECUTABLE=/usr/bin/python3
+      # Set Flink properties (removed python.executable)
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        execution.target: remote
+        rest.address: jobmanager
+        rest.port: 8081
+        python.executable: /usr/bin/python3 
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio12345
+      - AWS_REGION=us-east-1   
+      - GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp/key.json
+      - HADOOP_CONF_DIR=/opt/flink/conf
+      - HADOOP_USER_NAME=minio
+    depends_on: [jobmanager]
+    networks: [flink-net]
+    volumes:
+      - ./notebooks:/notebooks
+      - ./conf:/opt/flink/conf
+      - ./secret/key.json:/etc/gcp/key.json:ro
+
+      # Optional: drop job jars/py here if using CLI
+      # - ./usrlib:/opt/flink/usrlib
+   
+
+  flink-sql-client:
+    image: flink-py:1.20-java11        # reuse your Flink build image
+    container_name: flink-sql-client
+    restart: "no"                      # don't restart automatically
+    networks: [flink-net]
+    working_dir: /opt/flink
+    environment:
+      - FLINK_HOME=/opt/flink
+      - FLINK_CONF_DIR=/opt/flink/conf
+      - PYFLINK_CLIENT_EXECUTABLE=/usr/bin/python3
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        execution.target: remote
+        rest.address: jobmanager
+        rest.port: 8081
+        python.executable: /usr/bin/python3 
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio12345
+      - AWS_REGION=us-east-1   
+      - GOOGLE_APPLICATION_CREDENTIALS=/etc/gcp/key.json
+      - HADOOP_CONF_DIR=/opt/flink/conf
+      - HADOOP_USER_NAME=minio
+    depends_on: [jobmanager]
+    volumes:
+      - ./conf:/opt/flink/conf
+      - ./notebooks:/notebooks
+      - ./usrlib:/opt/flink/usrlib   # optional, if you keep jars/py there
+      - ./logs:/opt/flink/log
+    entrypoint: ["tail", "-f", "/dev/null"]   # keep container alive for exec
+  
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: unless-stopped
+    networks: [flink-net]
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ecomm
+      MYSQL_USER: team
+      MYSQL_PASSWORD: team1234
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    # ensures PyFlink JDBC works cleanly
+ 
+  minio:
+    image: minio/minio:RELEASE.2025-07-23T15-54-02Z
+    container_name: minio
+    restart: unless-stopped
+    networks: [flink-net]
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio12345
+      MINIO_SKIP_CLIENT: "true"   # disable interactive client in logs
+      MINIO_PROMPT: "off"         # disable license acknowledgment prompt
+    command: server /data --console-address ":9001"
+    ports: ["9000:9000", "9001:9001"]
+    volumes:
+      - minio-data:/data
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-05-21T01-59-54Z
+    container_name: minio-init
+    depends_on: [minio]
+    networks: [flink-net]
+    restart: "no"
+    entrypoint: >
+      sh -c "
+      until (mc alias set local http://minio:9000 minio minio12345) 2>/dev/null; do
+        echo 'waiting for minio...'; sleep 2;
+      done &&
+      mc mb --ignore-existing local/flink-checkpoints &&
+      mc mb --ignore-existing local/flink-savepoints &&
+      mc mb --ignore-existing local/warehouse &&
+      mc mb --ignore-existing local/flink-logs &&
+      mc anonymous set download local/warehouse &&
+      echo 'MinIO buckets ready.'"
+ 
+networks:
+  flink-net: 
+    name: flink-net
+
+volumes:
+  zk-data:
+  zk-txn-logs:
+  kafka-data:
+  airflow-db:
+  mysql-data:
+  minio-data:

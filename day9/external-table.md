@@ -23,6 +23,8 @@ FROM TABLE(
 );
 
 ```
+
+```
 -- 1) Unnest the returned array/rows and select fields
 SELECT
   x.id,
